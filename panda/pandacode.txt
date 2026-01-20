@@ -1,0 +1,1271 @@
+#include <windows.h>
+#include <GL/glut.h>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
+#include <iostream>
+
+using namespace std;
+
+#define PI 3.14159265358979323846
+
+// Current scene selector
+int currentScene = 1;
+
+// Scene 1 variables (Eating)
+float handAngle = 0.0f;
+float handDirection = 1.0f;
+float mouthOpen = 0.0f;
+float mouthDirection = 1.0f;
+
+// Scene 2 variables (River)
+float headAngle = 0.0f;
+float headDirection = 1.0f;
+float waterFlow = 0.0f;
+
+// Scene 3 variables (Sleeping)
+float breathScale = 1.0f;
+float breathDirection = 1.0f;
+float starTwinkle[20];
+float fireflyPos[10][2];
+float fireflyAlpha[10];
+int fireflyDirection[10];
+
+// Scene 4 variables (Rolling)
+float rollAngle = 0.0f;
+float rollPosition = -50.0f;
+float rollDir = 1.0f;
+bool isRolling = false;
+float tailAngle = 0.0f;
+float tailDirection = 1.0f;
+float butterflyPos[5][2];
+float butterflyWing[5];
+
+// Common variables
+float cloudMove = 0.0f;
+
+// Helper function to draw filled circle
+void drawCircle(float x, float y, float radius) {
+    int triangleAmount = 100;
+    GLfloat twicePi = 2.0f * PI;
+
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(x, y);
+    for(int i = 0; i <= triangleAmount; i++) {
+        glVertex2f(x + (radius * cos(i * twicePi / triangleAmount)),
+                   y + (radius * sin(i * twicePi / triangleAmount)));
+    }
+    glEnd();
+}
+
+// ============== COMMON FUNCTIONS ==============
+
+void drawBamboo(float x, float y, float height) {
+    glLineWidth(8.0f);
+    glBegin(GL_LINES);
+    glColor3ub(107, 142, 35);
+    glVertex2f(x, y);
+    glVertex2f(x, y + height);
+    glEnd();
+
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glColor3ub(85, 107, 47);
+    for(float h = y + 10.0f; h < y + height; h += 8.0f) {
+        glVertex2f(x - 4.0f, h);
+        glVertex2f(x + 4.0f, h);
+    }
+    glEnd();
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glColor3ub(0, 128, 0);
+    glVertex2f(x, y + height - 5.0f);
+    glVertex2f(x - 8.0f, y + height);
+    glVertex2f(x, y + height - 10.0f);
+    glVertex2f(x - 7.0f, y + height - 5.0f);
+    glVertex2f(x, y + height - 5.0f);
+    glVertex2f(x + 8.0f, y + height);
+    glVertex2f(x, y + height - 10.0f);
+    glVertex2f(x + 7.0f, y + height - 5.0f);
+    glEnd();
+}
+
+// ============== SCENE 1: EATING BAMBOO ==============
+
+void drawSky1() {
+    glBegin(GL_QUADS);
+    glColor3ub(135, 206, 235);
+    glVertex2f(-100.0f, 0.0f);
+    glVertex2f(100.0f, 0.0f);
+    glColor3ub(176, 224, 230);
+    glVertex2f(100.0f, 100.0f);
+    glVertex2f(-100.0f, 100.0f);
+    glEnd();
+}
+
+void drawSun1() {
+    glColor3ub(255, 223, 0);
+    drawCircle(70.0f, 80.0f, 8.0f);
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glColor3ub(255, 223, 0);
+    for(int i = 0; i < 12; i++) {
+        float angle = i * 30.0f * PI / 180.0f;
+        glVertex2f(70.0f + cos(angle) * 10.0f, 80.0f + sin(angle) * 10.0f);
+        glVertex2f(70.0f + cos(angle) * 13.0f, 80.0f + sin(angle) * 13.0f);
+    }
+    glEnd();
+}
+
+void drawClouds1() {
+    glPushMatrix();
+    glTranslatef(cloudMove, 0.0f, 0.0f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(-60.0f, 75.0f, 4.0f);
+    drawCircle(-56.0f, 75.0f, 5.0f);
+    drawCircle(-52.0f, 74.0f, 4.5f);
+
+    drawCircle(-20.0f, 85.0f, 4.0f);
+    drawCircle(-16.0f, 85.0f, 5.5f);
+    drawCircle(-12.0f, 84.0f, 4.0f);
+
+    glPopMatrix();
+}
+
+void drawGround1() {
+    glBegin(GL_QUADS);
+    glColor3ub(124, 252, 0);
+    glVertex2f(-100.0f, 0.0f);
+    glVertex2f(100.0f, 0.0f);
+    glColor3ub(34, 139, 34);
+    glVertex2f(100.0f, 30.0f);
+    glVertex2f(-100.0f, 30.0f);
+    glEnd();
+}
+
+void drawPanda1() {
+    glPushMatrix();
+    glTranslatef(0.0f, 30.0f, 0.0f);
+
+    glColor4ub(0, 0, 0, 50);
+    glBegin(GL_POLYGON);
+    for(int i = 0; i < 360; i += 10) {
+        float angle = i * PI / 180.0f;
+        glVertex2f(cos(angle) * 15.0f, -8.0f + sin(angle) * 3.0f);
+    }
+    glEnd();
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-8.0f, 0.0f, 5.0f);
+    drawCircle(8.0f, 0.0f, 5.0f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(0.0f, 8.0f, 12.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(0.0f, 6.0f, 7.0f);
+
+    glPushMatrix();
+    glTranslatef(-8.0f, 10.0f, 0.0f);
+    glRotatef(handAngle, 0.0f, 0.0f, 1.0f);
+    glTranslatef(0.0f, -5.0f, 0.0f);
+    glColor3ub(0, 0, 0);
+    drawCircle(0.0f, 0.0f, 4.0f);
+    glPopMatrix();
+
+    glColor3ub(0, 0, 0);
+    drawCircle(8.0f, 10.0f, 4.0f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(0.0f, 20.0f, 10.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-6.0f, 27.0f, 3.5f);
+    drawCircle(6.0f, 27.0f, 3.5f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-3.5f, 21.0f, 3.0f);
+    drawCircle(3.5f, 21.0f, 3.0f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(-3.5f, 21.5f, 1.5f);
+    drawCircle(3.5f, 21.5f, 1.5f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-3.0f, 21.5f, 0.8f);
+    drawCircle(4.0f, 21.5f, 0.8f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(0.0f, 18.0f, 1.5f);
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_STRIP);
+    glColor3ub(0, 0, 0);
+    glVertex2f(-2.0f, 16.5f);
+    glVertex2f(0.0f, 15.5f);
+    glVertex2f(2.0f, 16.5f);
+    glEnd();
+
+    glPopMatrix();
+}
+
+void drawBambooStick() {
+    glPushMatrix();
+    glTranslatef(-12.0f, 48.0f, 0.0f);
+    glRotatef(handAngle * 0.5f - 20.0f, 0.0f, 0.0f, 1.0f);
+
+    glLineWidth(6.0f);
+    glBegin(GL_LINES);
+    glColor3ub(107, 142, 35);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(0.0f, 12.0f);
+    glEnd();
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glColor3ub(85, 107, 47);
+    glVertex2f(-2.0f, 6.0f);
+    glVertex2f(2.0f, 6.0f);
+    glEnd();
+
+    glPopMatrix();
+}
+
+void displayScene1() {
+    drawSky1();
+    drawSun1();
+    drawClouds1();
+    drawGround1();
+
+    drawBamboo(-70.0f, 30.0f, 45.0f);
+    drawBamboo(-50.0f, 30.0f, 50.0f);
+    drawBamboo(-35.0f, 30.0f, 40.0f);
+    drawBamboo(35.0f, 30.0f, 48.0f);
+    drawBamboo(55.0f, 30.0f, 42.0f);
+    drawBamboo(70.0f, 30.0f, 46.0f);
+
+    drawPanda1();
+    drawBambooStick();
+}
+
+// ============== SCENE 2: RIVER ==============
+
+void drawSky2() {
+    glBegin(GL_QUADS);
+    glColor3ub(100, 180, 255);
+    glVertex2f(-100.0f, 0.0f);
+    glVertex2f(100.0f, 0.0f);
+    glColor3ub(150, 210, 255);
+    glVertex2f(100.0f, 100.0f);
+    glVertex2f(-100.0f, 100.0f);
+    glEnd();
+}
+
+void drawSun2() {
+    glColor3ub(255, 200, 50);
+    drawCircle(-60.0f, 75.0f, 9.0f);
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glColor3ub(255, 200, 50);
+    for(int i = 0; i < 12; i++) {
+        float angle = i * 30.0f * PI / 180.0f;
+        glVertex2f(-60.0f + cos(angle) * 11.0f, 75.0f + sin(angle) * 11.0f);
+        glVertex2f(-60.0f + cos(angle) * 14.0f, 75.0f + sin(angle) * 14.0f);
+    }
+    glEnd();
+}
+
+void drawClouds2() {
+    glPushMatrix();
+    glTranslatef(cloudMove, 0.0f, 0.0f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(20.0f, 80.0f, 4.5f);
+    drawCircle(24.0f, 80.0f, 5.0f);
+    drawCircle(28.0f, 79.0f, 4.0f);
+
+    drawCircle(60.0f, 88.0f, 4.0f);
+    drawCircle(64.0f, 88.0f, 5.5f);
+    drawCircle(68.0f, 87.0f, 4.5f);
+
+    glPopMatrix();
+}
+
+void drawGround2() {
+    glBegin(GL_QUADS);
+    glColor3ub(85, 170, 85);
+    glVertex2f(-100.0f, 35.0f);
+    glVertex2f(100.0f, 35.0f);
+    glVertex2f(100.0f, 50.0f);
+    glVertex2f(-100.0f, 50.0f);
+    glEnd();
+
+    glBegin(GL_QUADS);
+    glColor3ub(85, 170, 85);
+    glVertex2f(-100.0f, 25.0f);
+    glVertex2f(100.0f, 25.0f);
+    glVertex2f(100.0f, 35.0f);
+    glVertex2f(-100.0f, 35.0f);
+    glEnd();
+}
+
+void drawRiver() {
+    glBegin(GL_QUADS);
+    glColor3ub(64, 164, 223);
+    glVertex2f(-100.0f, 0.0f);
+    glVertex2f(100.0f, 0.0f);
+    glColor3ub(30, 144, 255);
+    glVertex2f(100.0f, 25.0f);
+    glVertex2f(-100.0f, 25.0f);
+    glEnd();
+}
+
+void drawPanda2() {
+    glPushMatrix();
+    glTranslatef(15.0f, 35.0f, 0.0f);
+
+    glColor4ub(0, 0, 0, 50);
+    glBegin(GL_POLYGON);
+    for(int i = 0; i < 360; i += 10) {
+        float angle = i * PI / 180.0f;
+        glVertex2f(cos(angle) * 12.0f, -3.0f + sin(angle) * 2.0f);
+    }
+    glEnd();
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-5.0f, 2.0f, 4.5f);
+    drawCircle(5.0f, 2.0f, 4.5f);
+
+    glColor3ub(255, 255, 255);
+    glBegin(GL_POLYGON);
+    for(int i = 0; i < 360; i += 10) {
+        float angle = i * PI / 180.0f;
+        glVertex2f(cos(angle) * 10.0f, 12.0f + sin(angle) * 11.0f);
+    }
+    glEnd();
+
+    glColor3ub(0, 0, 0);
+    drawCircle(0.0f, 10.0f, 6.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-8.0f, 15.0f, 4.0f);
+    drawCircle(8.0f, 15.0f, 4.0f);
+
+    glPushMatrix();
+    glTranslatef(0.0f, 25.0f, 0.0f);
+    glRotatef(headAngle, 0.0f, 0.0f, 1.0f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(0.0f, 0.0f, 9.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-5.5f, 6.0f, 3.0f);
+    drawCircle(5.5f, 6.0f, 3.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-3.0f, 1.0f, 2.8f);
+    drawCircle(3.0f, 1.0f, 2.8f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(-3.0f, 1.5f, 1.4f);
+    drawCircle(3.0f, 1.5f, 1.4f);
+
+    glColor3ub(0, 0, 0);
+    float pupilOffset = headAngle * 0.02f;
+    drawCircle(-3.0f + pupilOffset, 1.5f, 0.7f);
+    drawCircle(3.0f + pupilOffset, 1.5f, 0.7f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(0.0f, -2.0f, 1.3f);
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_STRIP);
+    glColor3ub(0, 0, 0);
+    glVertex2f(-2.0f, -3.5f);
+    glVertex2f(0.0f, -4.5f);
+    glVertex2f(2.0f, -3.5f);
+    glEnd();
+
+    glPopMatrix();
+    glPopMatrix();
+}
+
+void displayScene2() {
+    drawSky2();
+    drawSun2();
+    drawClouds2();
+    drawRiver();
+    drawGround2();
+
+    drawBamboo(-85.0f, 35.0f, 35.0f);
+    drawBamboo(-75.0f, 35.0f, 38.0f);
+    drawBamboo(-65.0f, 35.0f, 33.0f);
+    drawBamboo(-55.0f, 35.0f, 36.0f);
+    drawBamboo(55.0f, 35.0f, 37.0f);
+    drawBamboo(65.0f, 35.0f, 34.0f);
+    drawBamboo(75.0f, 35.0f, 39.0f);
+    drawBamboo(85.0f, 35.0f, 35.0f);
+
+    drawPanda2();
+}
+
+// ============== SCENE 3: SLEEPING ==============
+
+void drawNightSky() {
+    glBegin(GL_QUADS);
+    glColor3ub(10, 10, 40);
+    glVertex2f(-100.0f, 0.0f);
+    glVertex2f(100.0f, 0.0f);
+    glColor3ub(25, 25, 60);
+    glVertex2f(100.0f, 100.0f);
+    glVertex2f(-100.0f, 100.0f);
+    glEnd();
+}
+
+void drawMoon() {
+    glColor3ub(240, 240, 200);
+    drawCircle(60.0f, 80.0f, 8.0f);
+
+    glColor3ub(200, 200, 180);
+    drawCircle(58.0f, 82.0f, 1.5f);
+    drawCircle(62.0f, 79.0f, 1.2f);
+    drawCircle(61.0f, 83.0f, 0.8f);
+}
+
+void drawStars() {
+    glPointSize(2.0f);
+    glBegin(GL_POINTS);
+
+    int starPositions[][2] = {
+        {-80, 90}, {-60, 85}, {-40, 92}, {-20, 88}, {0, 95},
+        {20, 87}, {40, 93}, {-70, 78}, {-50, 82}, {-30, 76},
+        {10, 79}, {30, 83}, {50, 77}, {-85, 70}, {-45, 72},
+        {-10, 68}, {25, 71}, {70, 75}, {-75, 95}, {45, 89}
+    };
+
+    for(int i = 0; i < 20; i++) {
+        float brightness = 150 + starTwinkle[i] * 105;
+        glColor3ub((int)brightness, (int)brightness, (int)brightness);
+        glVertex2f((float)starPositions[i][0], (float)starPositions[i][1]);
+    }
+    glEnd();
+
+    glLineWidth(1.5f);
+    glBegin(GL_LINES);
+    glColor3ub(255, 255, 200);
+    glVertex2f(-65.0f, 88.0f);
+    glVertex2f(-65.0f, 92.0f);
+    glVertex2f(-67.0f, 90.0f);
+    glVertex2f(-63.0f, 90.0f);
+
+    glVertex2f(33.0f, 85.0f);
+    glVertex2f(37.0f, 85.0f);
+    glVertex2f(35.0f, 83.0f);
+    glVertex2f(35.0f, 87.0f);
+    glEnd();
+}
+
+void drawFireflies() {
+    for(int i = 0; i < 10; i++) {
+        glColor4ub(255, 255, 150, (int)(fireflyAlpha[i] * 100));
+        drawCircle(fireflyPos[i][0], fireflyPos[i][1], 1.5f);
+
+        glColor4ub(255, 255, 200, (int)(fireflyAlpha[i] * 200));
+        drawCircle(fireflyPos[i][0], fireflyPos[i][1], 0.8f);
+    }
+}
+
+void drawNightGround() {
+    glBegin(GL_QUADS);
+    glColor3ub(20, 40, 20);
+    glVertex2f(-100.0f, 0.0f);
+    glVertex2f(100.0f, 0.0f);
+    glColor3ub(15, 30, 15);
+    glVertex2f(100.0f, 30.0f);
+    glVertex2f(-100.0f, 30.0f);
+    glEnd();
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glColor3ub(10, 25, 10);
+    for(float i = -95.0f; i < 95.0f; i += 5.0f) {
+        glVertex2f(i, 30.0f);
+        glVertex2f(i + 1.0f, 33.0f);
+    }
+    glEnd();
+}
+
+void drawNightBamboo(float x, float y, float height) {
+    glLineWidth(8.0f);
+    glBegin(GL_LINES);
+    glColor3ub(50, 70, 30);
+    glVertex2f(x, y);
+    glVertex2f(x, y + height);
+    glEnd();
+
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glColor3ub(40, 55, 25);
+    for(float h = y + 10.0f; h < y + height; h += 8.0f) {
+        glVertex2f(x - 4.0f, h);
+        glVertex2f(x + 4.0f, h);
+    }
+    glEnd();
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glColor3ub(30, 60, 20);
+    glVertex2f(x, y + height - 5.0f);
+    glVertex2f(x - 8.0f, y + height);
+    glVertex2f(x, y + height - 10.0f);
+    glVertex2f(x - 7.0f, y + height - 5.0f);
+    glVertex2f(x, y + height - 5.0f);
+    glVertex2f(x + 8.0f, y + height);
+    glVertex2f(x, y + height - 10.0f);
+    glVertex2f(x + 7.0f, y + height - 5.0f);
+    glEnd();
+}
+
+void drawCave() {
+    glColor3ub(5, 5, 10);
+    glBegin(GL_POLYGON);
+    glVertex2f(-45.0f, 30.0f);
+    glVertex2f(-45.0f, 55.0f);
+    glVertex2f(-35.0f, 65.0f);
+    glVertex2f(-20.0f, 70.0f);
+    glVertex2f(0.0f, 70.0f);
+    glVertex2f(15.0f, 65.0f);
+    glVertex2f(25.0f, 55.0f);
+    glVertex2f(25.0f, 30.0f);
+    glEnd();
+
+    glColor3ub(60, 50, 40);
+    glBegin(GL_POLYGON);
+    glVertex2f(-50.0f, 30.0f);
+    glVertex2f(-48.0f, 45.0f);
+    glVertex2f(-42.0f, 60.0f);
+    glVertex2f(-30.0f, 68.0f);
+    glVertex2f(-35.0f, 65.0f);
+    glVertex2f(-45.0f, 55.0f);
+    glVertex2f(-45.0f, 30.0f);
+    glEnd();
+
+    glBegin(GL_POLYGON);
+    glVertex2f(30.0f, 30.0f);
+    glVertex2f(28.0f, 45.0f);
+    glVertex2f(22.0f, 58.0f);
+    glVertex2f(15.0f, 65.0f);
+    glVertex2f(18.0f, 68.0f);
+    glVertex2f(0.0f, 70.0f);
+    glVertex2f(-20.0f, 70.0f);
+    glEnd();
+
+    glColor3ub(80, 70, 60);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-42.0f, 50.0f);
+    glVertex2f(-40.0f, 58.0f);
+    glVertex2f(-35.0f, 52.0f);
+
+    glVertex2f(22.0f, 48.0f);
+    glVertex2f(20.0f, 55.0f);
+    glVertex2f(17.0f, 50.0f);
+    glEnd();
+}
+
+void drawSleepingPanda() {
+    glPushMatrix();
+    glTranslatef(-10.0f, 35.0f, 0.0f);
+    glScalef(breathScale, breathScale, 1.0f);
+
+    glColor4ub(0, 0, 0, 80);
+    glBegin(GL_POLYGON);
+    for(int i = 0; i < 360; i += 10) {
+        float angle = i * PI / 180.0f;
+        glVertex2f(cos(angle) * 18.0f, -5.0f + sin(angle) * 2.0f);
+    }
+    glEnd();
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-8.0f, 0.0f, 5.0f);
+    drawCircle(6.0f, -1.0f, 5.0f);
+
+    glColor3ub(255, 255, 255);
+    glBegin(GL_POLYGON);
+    for(int i = 0; i < 360; i += 10) {
+        float angle = i * PI / 180.0f;
+        glVertex2f(cos(angle) * 13.0f, 5.0f + sin(angle) * 8.0f);
+    }
+    glEnd();
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-2.0f, 4.0f, 6.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-10.0f, 6.0f, 3.5f);
+    drawCircle(8.0f, 5.0f, 3.5f);
+
+    glPushMatrix();
+    glTranslatef(12.0f, 8.0f, 0.0f);
+    glRotatef(-15.0f, 0.0f, 0.0f, 1.0f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(0.0f, 0.0f, 8.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-4.0f, 5.0f, 2.8f);
+    drawCircle(4.0f, 5.0f, 2.8f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-2.5f, 0.5f, 2.5f);
+    drawCircle(2.5f, 0.5f, 2.5f);
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glColor3ub(50, 50, 50);
+    glVertex2f(-3.5f, 0.5f);
+    glVertex2f(-1.5f, 0.5f);
+    glVertex2f(1.5f, 0.5f);
+    glVertex2f(3.5f, 0.5f);
+    glEnd();
+
+    glColor3ub(0, 0, 0);
+    drawCircle(0.0f, -2.0f, 1.2f);
+
+    glLineWidth(1.5f);
+    glBegin(GL_LINE_STRIP);
+    glColor3ub(0, 0, 0);
+    glVertex2f(-1.5f, -3.5f);
+    glVertex2f(0.0f, -4.0f);
+    glVertex2f(1.5f, -3.5f);
+    glEnd();
+
+    glPopMatrix();
+    glPopMatrix();
+}
+
+void drawSleepingZzz() {
+    glLineWidth(2.5f);
+    glColor3ub(200, 200, 200);
+
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(8.0f, 50.0f);
+    glVertex2f(12.0f, 50.0f);
+    glVertex2f(8.0f, 46.0f);
+    glVertex2f(12.0f, 46.0f);
+    glEnd();
+
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(13.0f, 54.0f);
+    glVertex2f(16.0f, 54.0f);
+    glVertex2f(13.0f, 51.0f);
+    glVertex2f(16.0f, 51.0f);
+    glEnd();
+
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(17.0f, 57.0f);
+    glVertex2f(19.5f, 57.0f);
+    glVertex2f(17.0f, 54.5f);
+    glVertex2f(19.5f, 54.5f);
+    glEnd();
+}
+
+void displayScene3() {
+    drawNightSky();
+    drawMoon();
+    drawStars();
+    drawFireflies();
+    drawNightGround();
+
+    drawNightBamboo(-90.0f, 30.0f, 30.0f);
+    drawNightBamboo(-80.0f, 30.0f, 33.0f);
+    drawNightBamboo(-70.0f, 30.0f, 28.0f);
+    drawNightBamboo(-60.0f, 30.0f, 31.0f);
+    drawNightBamboo(60.0f, 30.0f, 32.0f);
+    drawNightBamboo(70.0f, 30.0f, 29.0f);
+    drawNightBamboo(80.0f, 30.0f, 34.0f);
+    drawNightBamboo(90.0f, 30.0f, 30.0f);
+
+    drawCave();
+    drawSleepingPanda();
+    drawSleepingZzz();
+}
+
+// ============== SCENE 4: ROLLING ==============
+
+void drawSky4() {
+    glBegin(GL_QUADS);
+    glColor3ub(135, 206, 250);
+    glVertex2f(-100.0f, 0.0f);
+    glVertex2f(100.0f, 0.0f);
+    glColor3ub(176, 224, 255);
+    glVertex2f(100.0f, 100.0f);
+    glVertex2f(-100.0f, 100.0f);
+    glEnd();
+}
+
+void drawSun4() {
+    glColor3ub(255, 215, 0);
+    drawCircle(75.0f, 85.0f, 9.0f);
+
+    glLineWidth(2.5f);
+    glBegin(GL_LINES);
+    glColor3ub(255, 215, 0);
+    for(int i = 0; i < 12; i++) {
+        float angle = i * 30.0f * PI / 180.0f;
+        glVertex2f(75.0f + cos(angle) * 11.0f, 85.0f + sin(angle) * 11.0f);
+        glVertex2f(75.0f + cos(angle) * 15.0f, 85.0f + sin(angle) * 15.0f);
+    }
+    glEnd();
+}
+
+void drawClouds4() {
+    glPushMatrix();
+    glTranslatef(cloudMove, 0.0f, 0.0f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(-70.0f, 82.0f, 5.0f);
+    drawCircle(-66.0f, 82.0f, 6.0f);
+    drawCircle(-62.0f, 81.0f, 5.5f);
+    drawCircle(-58.0f, 81.0f, 4.5f);
+
+    drawCircle(-20.0f, 88.0f, 4.5f);
+    drawCircle(-16.0f, 88.0f, 5.5f);
+    drawCircle(-12.0f, 87.0f, 5.0f);
+
+    drawCircle(30.0f, 85.0f, 5.0f);
+    drawCircle(34.0f, 85.0f, 6.0f);
+    drawCircle(38.0f, 84.0f, 5.0f);
+
+    glPopMatrix();
+}
+
+void drawHills() {
+    glBegin(GL_POLYGON);
+    glColor3ub(34, 139, 34);
+    glVertex2f(-100.0f, 25.0f);
+    glVertex2f(-70.0f, 40.0f);
+    glVertex2f(-40.0f, 35.0f);
+    glVertex2f(-10.0f, 45.0f);
+    glVertex2f(20.0f, 38.0f);
+    glVertex2f(50.0f, 42.0f);
+    glVertex2f(80.0f, 36.0f);
+    glVertex2f(100.0f, 40.0f);
+    glVertex2f(100.0f, 25.0f);
+    glEnd();
+
+    glBegin(GL_POLYGON);
+    glColor3ub(124, 252, 0);
+    glVertex2f(-100.0f, 0.0f);
+    glVertex2f(-80.0f, 28.0f);
+    glVertex2f(-60.0f, 32.0f);
+    glVertex2f(-30.0f, 25.0f);
+    glVertex2f(0.0f, 30.0f);
+    glVertex2f(30.0f, 26.0f);
+    glVertex2f(60.0f, 32.0f);
+    glVertex2f(90.0f, 28.0f);
+    glVertex2f(100.0f, 30.0f);
+    glVertex2f(100.0f, 0.0f);
+    glEnd();
+}
+
+void drawButterfly(float x, float y, float wingAngle) {
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+
+    glColor3ub(0, 0, 0);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glVertex2f(0.0f, -1.5f);
+    glVertex2f(0.0f, 1.5f);
+    glEnd();
+
+    glLineWidth(1.5f);
+    glBegin(GL_LINES);
+    glVertex2f(0.0f, 1.5f);
+    glVertex2f(-0.5f, 2.5f);
+    glVertex2f(0.0f, 1.5f);
+    glVertex2f(0.5f, 2.5f);
+    glEnd();
+
+    glPushMatrix();
+    glRotatef(wingAngle, 0.0f, 1.0f, 0.0f);
+
+    glColor3ub(255, 140, 0);
+    glBegin(GL_POLYGON);
+    glVertex2f(0.0f, 0.5f);
+    glVertex2f(-2.0f, 1.5f);
+    glVertex2f(-1.5f, 0.0f);
+    glEnd();
+
+    glColor3ub(255, 165, 0);
+    glBegin(GL_POLYGON);
+    glVertex2f(0.0f, -0.5f);
+    glVertex2f(-1.8f, -0.5f);
+    glVertex2f(-1.2f, 0.0f);
+    glEnd();
+
+    glPopMatrix();
+
+    glPushMatrix();
+    glRotatef(-wingAngle, 0.0f, 1.0f, 0.0f);
+
+    glColor3ub(255, 140, 0);
+    glBegin(GL_POLYGON);
+    glVertex2f(0.0f, 0.5f);
+    glVertex2f(2.0f, 1.5f);
+    glVertex2f(1.5f, 0.0f);
+    glEnd();
+
+    glColor3ub(255, 165, 0);
+    glBegin(GL_POLYGON);
+    glVertex2f(0.0f, -0.5f);
+    glVertex2f(1.8f, -0.5f);
+    glVertex2f(1.2f, 0.0f);
+    glEnd();
+
+    glPopMatrix();
+    glPopMatrix();
+}
+
+void drawResetButton() {
+    glColor3ub(100, 150, 255);
+    glBegin(GL_QUADS);
+    glVertex2f(60.0f, 5.0f);
+    glVertex2f(90.0f, 5.0f);
+    glVertex2f(90.0f, 15.0f);
+    glVertex2f(60.0f, 15.0f);
+    glEnd();
+
+    glColor3ub(50, 100, 200);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(60.0f, 5.0f);
+    glVertex2f(90.0f, 5.0f);
+    glVertex2f(90.0f, 15.0f);
+    glVertex2f(60.0f, 15.0f);
+    glEnd();
+
+    glColor3ub(255, 255, 255);
+    glLineWidth(3.0f);
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(64.0f, 8.0f);
+    glVertex2f(64.0f, 12.0f);
+    glVertex2f(67.0f, 12.0f);
+    glVertex2f(67.0f, 10.0f);
+    glVertex2f(64.0f, 10.0f);
+    glEnd();
+    glBegin(GL_LINES);
+    glVertex2f(64.0f, 10.0f);
+    glVertex2f(67.0f, 8.0f);
+
+    glVertex2f(69.0f, 8.0f);
+    glVertex2f(69.0f, 12.0f);
+    glVertex2f(69.0f, 12.0f);
+    glVertex2f(71.0f, 12.0f);
+    glVertex2f(69.0f, 10.0f);
+    glVertex2f(71.0f, 10.0f);
+    glVertex2f(69.0f, 8.0f);
+    glVertex2f(71.0f, 8.0f);
+
+    glVertex2f(75.0f, 12.0f);
+    glVertex2f(73.0f, 12.0f);
+    glVertex2f(73.0f, 12.0f);
+    glVertex2f(73.0f, 10.0f);
+    glVertex2f(73.0f, 10.0f);
+    glVertex2f(75.0f, 10.0f);
+    glVertex2f(75.0f, 10.0f);
+    glVertex2f(75.0f, 8.0f);
+    glVertex2f(75.0f, 8.0f);
+    glVertex2f(73.0f, 8.0f);
+
+    glVertex2f(77.0f, 8.0f);
+    glVertex2f(77.0f, 12.0f);
+    glVertex2f(77.0f, 12.0f);
+    glVertex2f(79.0f, 12.0f);
+    glVertex2f(77.0f, 10.0f);
+    glVertex2f(79.0f, 10.0f);
+    glVertex2f(77.0f, 8.0f);
+    glVertex2f(79.0f, 8.0f);
+
+    glVertex2f(81.0f, 12.0f);
+    glVertex2f(85.0f, 12.0f);
+    glVertex2f(83.0f, 12.0f);
+    glVertex2f(83.0f, 8.0f);
+    glEnd();
+}
+
+void drawRollingPanda() {
+    glPushMatrix();
+
+    float hillHeight = 28.0f + sin(rollPosition * 0.05f) * 3.0f;
+    glTranslatef(rollPosition, hillHeight + 10.0f, 0.0f);
+
+    if(isRolling) {
+        glRotatef(rollAngle, 0.0f, 0.0f, 1.0f);
+    }
+
+    glPushMatrix();
+    if(isRolling) {
+        glRotatef(-rollAngle, 0.0f, 0.0f, 1.0f);
+    }
+    glColor4ub(0, 0, 0, 60);
+    glBegin(GL_POLYGON);
+    for(int i = 0; i < 360; i += 10) {
+        float angle = i * PI / 180.0f;
+        glVertex2f(cos(angle) * 14.0f, -12.0f + sin(angle) * 2.0f);
+    }
+    glEnd();
+    glPopMatrix();
+
+    glColor3ub(255, 255, 255);
+    drawCircle(0.0f, 0.0f, 10.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(0.0f, -2.0f, 6.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-7.0f, -3.0f, 3.5f);
+    drawCircle(7.0f, -3.0f, 3.5f);
+    drawCircle(-6.0f, 4.0f, 3.5f);
+    drawCircle(6.0f, 4.0f, 3.5f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(0.0f, 8.0f, 7.0f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-4.0f, 13.0f, 2.5f);
+    drawCircle(4.0f, 13.0f, 2.5f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-2.5f, 9.0f, 2.3f);
+    drawCircle(2.5f, 9.0f, 2.3f);
+
+    glColor3ub(255, 255, 255);
+    drawCircle(-2.5f, 9.5f, 1.2f);
+    drawCircle(2.5f, 9.5f, 1.2f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(-2.3f, 9.5f, 0.6f);
+    drawCircle(2.7f, 9.5f, 0.6f);
+
+    glColor3ub(0, 0, 0);
+    drawCircle(0.0f, 6.5f, 1.0f);
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_STRIP);
+    glColor3ub(0, 0, 0);
+    glVertex2f(-2.0f, 5.0f);
+    glVertex2f(-1.0f, 4.0f);
+    glVertex2f(0.0f, 3.8f);
+    glVertex2f(1.0f, 4.0f);
+    glVertex2f(2.0f, 5.0f);
+    glEnd();
+
+    glPushMatrix();
+    glTranslatef(-8.0f, 0.0f, 0.0f);
+    glRotatef(tailAngle, 0.0f, 0.0f, 1.0f);
+    glColor3ub(255, 255, 255);
+    drawCircle(0.0f, 0.0f, 2.5f);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+void drawMotionLines() {
+    if(!isRolling) return;
+
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glColor4ub(150, 150, 150, 100);
+
+    float hillHeight = 28.0f + sin(rollPosition * 0.05f) * 3.0f;
+
+    glVertex2f(rollPosition - 15.0f, hillHeight + 8.0f);
+    glVertex2f(rollPosition - 10.0f, hillHeight + 8.0f);
+
+    glVertex2f(rollPosition - 18.0f, hillHeight + 12.0f);
+    glVertex2f(rollPosition - 13.0f, hillHeight + 12.0f);
+
+    glVertex2f(rollPosition - 16.0f, hillHeight + 16.0f);
+    glVertex2f(rollPosition - 11.0f, hillHeight + 16.0f);
+
+    glEnd();
+}
+
+void displayScene4() {
+    drawSky4();
+    drawSun4();
+    drawClouds4();
+    drawHills();
+
+    drawBamboo(70.0f, 28.0f, 35.0f);
+    drawBamboo(75.0f, 29.0f, 38.0f);
+    drawBamboo(80.0f, 28.0f, 33.0f);
+    drawBamboo(85.0f, 29.0f, 36.0f);
+    drawBamboo(90.0f, 28.0f, 34.0f);
+
+    for(int i = 0; i < 5; i++) {
+        drawButterfly(butterflyPos[i][0], butterflyPos[i][1], butterflyWing[i]);
+    }
+
+    drawMotionLines();
+    drawRollingPanda();
+    drawResetButton();
+}
+
+// ============== MAIN DISPLAY & UPDATES ==============
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    switch(currentScene) {
+        case 1:
+            displayScene1();
+            break;
+        case 2:
+            displayScene2();
+            break;
+        case 3:
+            displayScene3();
+            break;
+        case 4:
+            displayScene4();
+            break;
+    }
+
+    glFlush();
+    glutSwapBuffers();
+}
+
+void updateScene1(int value) {
+    handAngle += handDirection * 2.0f;
+    if(handAngle > 45.0f) handDirection = -1.0f;
+    else if(handAngle < -10.0f) handDirection = 1.0f;
+
+    mouthOpen += mouthDirection * 0.15f;
+    if(mouthOpen > 2.5f) mouthDirection = -1.0f;
+    else if(mouthOpen < 0.0f) mouthDirection = 1.0f;
+
+    if(currentScene == 1) glutPostRedisplay();
+    glutTimerFunc(50, updateScene1, 0);
+}
+
+void updateScene2(int value) {
+    headAngle += headDirection * 1.5f;
+    if(headAngle > 25.0f) headDirection = -1.0f;
+    else if(headAngle < -25.0f) headDirection = 1.0f;
+
+    waterFlow += 0.5f;
+    if(waterFlow > 15.0f) waterFlow = 0.0f;
+
+    if(currentScene == 2) glutPostRedisplay();
+    glutTimerFunc(60, updateScene2, 0);
+}
+
+void updateScene3(int value) {
+    breathScale += breathDirection * 0.003f;
+    if(breathScale > 1.02f) breathDirection = -1.0f;
+    else if(breathScale < 0.98f) breathDirection = 1.0f;
+
+    for(int i = 0; i < 20; i++) {
+        starTwinkle[i] += (rand() % 100 - 50) * 0.01f;
+        if(starTwinkle[i] > 1.0f) starTwinkle[i] = 1.0f;
+        if(starTwinkle[i] < 0.3f) starTwinkle[i] = 0.3f;
+    }
+
+    for(int i = 0; i < 10; i++) {
+        fireflyPos[i][0] += ((rand() % 100 - 50) * 0.05f);
+        fireflyPos[i][1] += ((rand() % 100 - 50) * 0.03f);
+
+        if(fireflyPos[i][0] < -90.0f) fireflyPos[i][0] = -90.0f;
+        if(fireflyPos[i][0] > 90.0f) fireflyPos[i][0] = 90.0f;
+        if(fireflyPos[i][1] < 35.0f) fireflyPos[i][1] = 35.0f;
+        if(fireflyPos[i][1] > 70.0f) fireflyPos[i][1] = 70.0f;
+
+        fireflyAlpha[i] += fireflyDirection[i] * 0.05f;
+        if(fireflyAlpha[i] > 1.0f) {
+            fireflyAlpha[i] = 1.0f;
+            fireflyDirection[i] = -1;
+        }
+        if(fireflyAlpha[i] < 0.2f) {
+            fireflyAlpha[i] = 0.2f;
+            fireflyDirection[i] = 1;
+        }
+    }
+
+    if(currentScene == 3) glutPostRedisplay();
+    glutTimerFunc(80, updateScene3, 0);
+}
+
+void updateScene4(int value) {
+    if(isRolling) {
+        rollAngle += 8.0f * rollDir;
+        rollPosition += 0.8f * rollDir;
+
+        if(rollPosition > 60.0f) {
+            rollPosition = 60.0f;
+            isRolling = false;
+        }
+        else if(rollPosition < -50.0f) {
+            rollPosition = -50.0f;
+        }
+    }
+
+    tailAngle += tailDirection * 3.0f;
+    if(tailAngle > 30.0f) tailDirection = -1.0f;
+    else if(tailAngle < -30.0f) tailDirection = 1.0f;
+
+    for(int i = 0; i < 5; i++) {
+        butterflyPos[i][0] += (rand() % 100 - 50) * 0.03f;
+        butterflyPos[i][1] += (rand() % 100 - 50) * 0.02f;
+
+        if(butterflyPos[i][0] < -90.0f) butterflyPos[i][0] = -90.0f;
+        if(butterflyPos[i][0] > 90.0f) butterflyPos[i][0] = 90.0f;
+        if(butterflyPos[i][1] < 40.0f) butterflyPos[i][1] = 40.0f;
+        if(butterflyPos[i][1] > 80.0f) butterflyPos[i][1] = 80.0f;
+
+        butterflyWing[i] = 30.0f * sin(glutGet(GLUT_ELAPSED_TIME) * 0.01f + i);
+    }
+
+    if(currentScene == 4) glutPostRedisplay();
+    glutTimerFunc(30, updateScene4, 0);
+}
+
+void updateClouds(int value) {
+    cloudMove += 0.25f;
+    if(cloudMove > 120.0f) cloudMove = -120.0f;
+
+    if(currentScene == 1 || currentScene == 2 || currentScene == 4) {
+        glutPostRedisplay();
+    }
+    glutTimerFunc(50, updateClouds, 0);
+}
+
+void initAnimations() {
+    srand((unsigned)time(NULL));
+
+    for(int i = 0; i < 20; i++) {
+        starTwinkle[i] = 0.5f + (rand() % 50) * 0.01f;
+    }
+
+    for(int i = 0; i < 10; i++) {
+        fireflyPos[i][0] = -80.0f + (rand() % 160);
+        fireflyPos[i][1] = 40.0f + (rand() % 30);
+        fireflyAlpha[i] = 0.3f + (rand() % 70) * 0.01f;
+        fireflyDirection[i] = (rand() % 2) ? 1 : -1;
+    }
+
+    for(int i = 0; i < 5; i++) {
+        butterflyPos[i][0] = -80.0f + (rand() % 160);
+        butterflyPos[i][1] = 50.0f + (rand() % 30);
+        butterflyWing[i] = 0.0f;
+    }
+}
+
+void init() {
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(-100.0, 100.0, 0.0, 100.0);
+    glMatrixMode(GL_MODELVIEW);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    initAnimations();
+}
+
+void handleMouse(int button, int state, int x, int y) {
+    if(currentScene == 4 && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
+        int windowWidth = glutGet(GLUT_WINDOW_WIDTH);
+        
+        float glX = ((float)x / windowWidth) * 200.0f - 100.0f;
+        float glY = (1.0f - (float)y / windowHeight) * 100.0f;
+        
+        if(glX >= 60.0f && glX <= 90.0f && glY >= 5.0f && glY <= 15.0f) {
+            rollPosition = -50.0f;
+            rollAngle = 0.0f;
+            isRolling = false;
+        }
+    }
+}
+
+void handleKeypress(unsigned char key, int x, int y) {
+    switch(key) {
+        case 27:
+            exit(0);
+            break;
+        case '1':
+            currentScene = 1;
+            glutPostRedisplay();
+            break;
+        case '2':
+            currentScene = 2;
+            glutPostRedisplay();
+            break;
+        case '3':
+            currentScene = 3;
+            glutPostRedisplay();
+            break;
+        case '4':
+            currentScene = 4;
+            glutPostRedisplay();
+            break;
+        case ' ':
+            if(currentScene == 4) {
+                isRolling = !isRolling;
+                if(isRolling) {
+                    rollDir = 1.0f;
+                }
+            }
+            break;
+        case 'r':
+        case 'R':
+            if(currentScene == 4) {
+                rollPosition = -50.0f;
+                rollAngle = 0.0f;
+                isRolling = false;
+            }
+            break;
+    }
+}
+
+int main(int argc, char** argv) {
+    cout << "============================================" << endl;
+    cout << "   2D PANDA LIFESTYLE PROJECT" << endl;
+    cout << "============================================" << endl << endl;
+    cout << "CONTROLS:" << endl;
+    cout << "  Press '1' - Scene 1: Eating Bamboo" << endl;
+    cout << "  Press '2' - Scene 2: By the River" << endl;
+    cout << "  Press '3' - Scene 3: Sleeping in Cave" << endl;
+    cout << "  Press '4' - Scene 4: Playing/Rolling" << endl;
+    cout << "  Press SPACE - Start/Pause rolling (Scene 4)" << endl;
+    cout << "  Press 'R' or click RESET button - Reset position (Scene 4)" << endl;
+    cout << "               Panda rolls toward bamboo forest!" << endl;
+    cout << "  Press ESC - Exit" << endl << endl;
+    cout << "============================================" << endl;
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(800, 600);
+    glutCreateWindow("2D Panda Lifestyle - Modified");
+
+    init();
+
+    glutDisplayFunc(display);
+    glutKeyboardFunc(handleKeypress);
+    glutMouseFunc(handleMouse);
+
+    glutTimerFunc(50, updateScene1, 0);
+    glutTimerFunc(60, updateScene2, 0);
+    glutTimerFunc(80, updateScene3, 0);
+    glutTimerFunc(30, updateScene4, 0);
+    glutTimerFunc(50, updateClouds, 0);
+
+    glutMainLoop();
+    return 0;
+}
